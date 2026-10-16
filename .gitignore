@@ -1,0 +1,9 @@
+# MovieLens is licensed by GroupLens and should be downloaded, not redistributed
+data/*.csv
+data/*.zip
+
+__pycache__/
+*.pyc
+.venv/
+*.log
+.DS_Store

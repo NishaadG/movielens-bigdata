@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MovieLens Ratings</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <div>
+        <h1>MovieLens ratings</h1>
+        <p class="lede" id="lede">Loading results&hellip;</p>
+      </div>
+      <ul class="status" id="status" aria-label="System status"></ul>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="figures" id="figures" aria-label="Key figures"></section>
+
+    <section>
+      <h2>Average rating by genre</h2>
+      <p class="note">Each dot is the mean of all ratings given to movies in that genre. A movie in two genres counts in both. The axis does not start at zero, so look at the spread, not the length.</p>
+      <div id="genres" class="dots"></div>
+    </section>
+
+    <section>
+      <div class="row-head">
+        <h2>Highest rated movies</h2>
+        <label class="pick">Genre
+          <select id="genre-select"></select>
+        </label>
+      </div>
+      <p class="note">Only movies with at least 50 ratings are considered, so a film rated 5.0 by one person does not win.</p>
+      <table id="top">
+        <thead><tr><th class="num">#</th><th>Title</th><th class="num">Avg rating</th><th class="num">Ratings</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="two">
+      <div>
+        <h2>How people rate</h2>
+        <p class="note">Number of ratings at each star value.</p>
+        <div id="dist" class="cols"></div>
+      </div>
+      <div>
+        <h2>Ratings per year</h2>
+        <p class="note">When the ratings were submitted.</p>
+        <div id="years"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Where the data lives</h2>
+      <p class="note">Files in HDFS under <code>/movielens</code>, read from the NameNode. Each block is stored on two DataNodes (replication 2).</p>
+      <table id="hdfs">
+        <thead><tr><th>Name</th><th>Type</th><th class="num">Size</th><th class="num">Replication</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <ol class="flow">
+        <li><b>HDFS</b> stores the raw CSV files</li>
+        <li><b>Spark</b> reads them and computes the statistics</li>
+        <li><b>Cassandra</b> holds the results</li>
+        <li><b>This page</b> reads from Cassandra</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="wrap">Dataset: MovieLens, GroupLens Research, University of Minnesota.</footer>
+  <script src="app.js"></script>
+</body>
+</html>

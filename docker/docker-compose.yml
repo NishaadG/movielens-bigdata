@@ -1,0 +1,71 @@
+# MovieLens analytics: HDFS (1 namenode + 2 datanodes) -> Spark -> Cassandra -> web dashboard
+services:
+  namenode:
+    image: apache/hadoop:3.3.6
+    hostname: namenode
+    command: ["hdfs", "namenode"]
+    ports:
+      - "9870:9870"
+    env_file: ./hadoop.env
+    environment:
+      ENSURE_NAMENODE_DIR: /tmp/hadoop-root/dfs/name
+    volumes:
+      - ../data:/input:ro
+
+  datanode1:
+    image: apache/hadoop:3.3.6
+    hostname: datanode1
+    command: ["hdfs", "datanode"]
+    env_file: ./hadoop.env
+    depends_on: [namenode]
+
+  datanode2:
+    image: apache/hadoop:3.3.6
+    hostname: datanode2
+    command: ["hdfs", "datanode"]
+    env_file: ./hadoop.env
+    depends_on: [namenode]
+
+  cassandra:
+    image: cassandra:4.1
+    hostname: cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      MAX_HEAP_SIZE: 512M
+      HEAP_NEWSIZE: 128M
+    volumes:
+      - ../cassandra:/cql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces' > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+  # Spark batch job: reads from HDFS, writes results to HDFS and Cassandra.
+  # Run on demand:  docker compose run --rm job
+  job:
+    build: ../app
+    command: ["python", "job.py"]
+    environment:
+      HDFS_URL: hdfs://namenode:8020
+      CASSANDRA_HOST: cassandra
+      MIN_RATINGS: "50"
+      REPLICATION: "2"
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    profiles: ["job"]
+
+  # Dashboard: FastAPI reads Cassandra (and HDFS metadata) and serves the web page.
+  web:
+    build: ../app
+    command: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8088:8000"
+    environment:
+      HDFS_WEB: http://namenode:9870
+      CASSANDRA_HOST: cassandra
+    depends_on:
+      cassandra:
+        condition: service_healthy
