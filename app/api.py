@@ -33,7 +33,7 @@ def summary():
 
 @app.get("/api/genres")
 def genres():
-    rows = db().execute("SELECT genre, num_ratings, num_movies, avg_rating FROM genre_stats")
+    rows = db().execute("SELECT genre, num_ratings, avg_rating FROM genre_stats")
     out = [r._asdict() for r in rows]
     return sorted(out, key=lambda r: -r["avg_rating"])
 
@@ -45,18 +45,6 @@ def top(genre: str = "All"):
         (genre,),
     )
     return [r._asdict() for r in rows]
-
-
-@app.get("/api/distribution")
-def distribution():
-    rows = db().execute("SELECT rating, cnt FROM rating_dist")
-    return sorted((r._asdict() for r in rows), key=lambda r: r["rating"])
-
-
-@app.get("/api/years")
-def years():
-    rows = db().execute("SELECT year, cnt, avg_rating FROM ratings_by_year")
-    return sorted((r._asdict() for r in rows), key=lambda r: r["year"])
 
 
 @app.get("/api/hdfs")

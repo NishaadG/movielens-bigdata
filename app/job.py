@@ -52,18 +52,7 @@ summary = {
 }
 print("SUMMARY", summary)
 
-# ---------------------------------------------------------------- 3. rating distribution
-rating_dist = ratings.groupBy("rating").count().orderBy("rating")
-
-# ---------------------------------------------------------------- 4. ratings per year
-by_year = (
-    ratings.withColumn("year", F.year(F.from_unixtime("timestamp")))
-    .groupBy("year")
-    .agg(F.count("*").alias("cnt"), F.avg("rating").alias("avg_rating"))
-    .orderBy("year")
-)
-
-# ---------------------------------------------------------------- 5. per-movie stats
+# ---------------------------------------------------------------- 3. per-movie stats
 movie_stats = (
     ratings.groupBy("movieId")
     .agg(F.avg("rating").alias("avg_rating"), F.count("*").alias("num_ratings"))
@@ -71,7 +60,7 @@ movie_stats = (
 )
 popular = movie_stats.filter(F.col("num_ratings") >= MIN_RATINGS)
 
-# ---------------------------------------------------------------- 6. per-genre stats
+# ---------------------------------------------------------------- 4. per-genre stats
 # one movie row per genre: "Action|Comedy" -> two rows
 movie_genres = movies.select(
     "movieId", "title", F.explode(F.split("genres", r"\|")).alias("genre")
@@ -82,13 +71,12 @@ genre_stats = (
     .groupBy("genre")
     .agg(
         F.count("*").alias("num_ratings"),
-        F.countDistinct("movieId").alias("num_movies"),
         F.avg("rating").alias("avg_rating"),
     )
     .orderBy(F.desc("avg_rating"))
 )
 
-# ---------------------------------------------------------------- 7. top movies per genre
+# ---------------------------------------------------------------- 5. top movies per genre
 w = Window.partitionBy("genre").orderBy(F.desc("avg_rating"), F.desc("num_ratings"))
 top_per_genre = (
     popular.select("movieId", "avg_rating", "num_ratings")
@@ -105,7 +93,7 @@ top_overall = (
 )
 top_movies = top_overall.unionByName(top_per_genre)
 
-# ---------------------------------------------------------------- 8. MapReduce-style genre count (RDD)
+# ---------------------------------------------------------------- 6. MapReduce-style genre count (RDD)
 # map: movie -> (genre, 1)   reduce: sum per genre
 genre_counts = (
     movies.rdd.flatMap(lambda r: r["genres"].split("|"))
@@ -115,19 +103,17 @@ genre_counts = (
 )
 print("GENRE COUNTS (movies per genre)", genre_counts.take(5))
 
-# ---------------------------------------------------------------- 9. write results back to HDFS
+# ---------------------------------------------------------------- 7. write results back to HDFS
 for name, df in [
     ("genre_stats", genre_stats),
     ("top_movies", top_movies),
-    ("rating_dist", rating_dist),
-    ("ratings_by_year", by_year),
 ]:
     df.coalesce(1).write.mode("overwrite").option("header", True).csv(f"{OUT_DIR}/{name}")
 spark.createDataFrame(genre_counts.collect(), ["genre", "movies"]).coalesce(1).write.mode(
     "overwrite"
 ).option("header", True).csv(f"{OUT_DIR}/genre_counts")
 
-# ---------------------------------------------------------------- 10. load into Cassandra
+# ---------------------------------------------------------------- 8. load into Cassandra
 # results are tiny (a few hundred rows) so collecting them to the driver is fine
 def connect():
     for attempt in range(30):
@@ -141,7 +127,7 @@ def connect():
 
 session = connect()
 
-for t in ["summary", "genre_stats", "top_by_genre", "rating_dist", "ratings_by_year"]:
+for t in ["summary", "genre_stats", "top_by_genre"]:
     session.execute(f"TRUNCATE {t}")
 
 ins = session.prepare("INSERT INTO summary (metric, value) VALUES (?, ?)")
@@ -149,10 +135,10 @@ for k, v in summary.items():
     session.execute(ins, (k, v))
 
 ins = session.prepare(
-    "INSERT INTO genre_stats (genre, num_ratings, num_movies, avg_rating) VALUES (?, ?, ?, ?)"
+    "INSERT INTO genre_stats (genre, num_ratings, avg_rating) VALUES (?, ?, ?)"
 )
 for r in genre_stats.collect():
-    session.execute(ins, (r["genre"], r["num_ratings"], r["num_movies"], float(r["avg_rating"])))
+    session.execute(ins, (r["genre"], r["num_ratings"], float(r["avg_rating"])))
 
 ins = session.prepare(
     "INSERT INTO top_by_genre (genre, rank, title, avg_rating, num_ratings) VALUES (?, ?, ?, ?, ?)"
@@ -161,14 +147,6 @@ for r in top_movies.collect():
     session.execute(
         ins, (r["genre"], r["rank"], r["title"], float(r["avg_rating"]), r["num_ratings"])
     )
-
-ins = session.prepare("INSERT INTO rating_dist (rating, cnt) VALUES (?, ?)")
-for r in rating_dist.collect():
-    session.execute(ins, (float(r["rating"]), r["count"]))
-
-ins = session.prepare("INSERT INTO ratings_by_year (year, cnt, avg_rating) VALUES (?, ?, ?)")
-for r in by_year.collect():
-    session.execute(ins, (r["year"], r["cnt"], float(r["avg_rating"])))
 
 print("DONE: results written to HDFS /movielens/output and Cassandra keyspace movielens")
 spark.stop()

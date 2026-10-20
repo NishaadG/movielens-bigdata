@@ -40,32 +40,13 @@
       </table>
     </section>
 
-    <section class="two">
-      <div>
-        <h2>How people rate</h2>
-        <p class="note">Number of ratings at each star value.</p>
-        <div id="dist" class="cols"></div>
-      </div>
-      <div>
-        <h2>Ratings per year</h2>
-        <p class="note">When the ratings were submitted.</p>
-        <div id="years"></div>
-      </div>
-    </section>
-
     <section>
       <h2>Where the data lives</h2>
-      <p class="note">Files in HDFS under <code>/movielens</code>, read from the NameNode. Each block is stored on two DataNodes (replication 2).</p>
+      <p class="note">Files in HDFS under <code>/movielens</code>, read from the NameNode. Replication is how many copies of each block HDFS keeps.</p>
       <table id="hdfs">
         <thead><tr><th>Name</th><th>Type</th><th class="num">Size</th><th class="num">Replication</th></tr></thead>
         <tbody></tbody>
       </table>
-      <ol class="flow">
-        <li><b>HDFS</b> stores the raw CSV files</li>
-        <li><b>Spark</b> reads them and computes the statistics</li>
-        <li><b>Cassandra</b> holds the results</li>
-        <li><b>This page</b> reads from Cassandra</li>
-      </ol>
     </section>
   </main>
 

@@ -1,11 +1,7 @@
-# Downloads MovieLens into ./data (ratings.csv + movies.csv)
-#   .\scripts\download_data.ps1            small set, ~100k ratings (default, quick)
-#   .\scripts\download_data.ps1 -Big       25M ratings (~650 MB), shows real HDFS block splitting
-param([switch]$Big)
-
+# Downloads the MovieLens small dataset into ./data (ratings.csv + movies.csv)
 $root = Split-Path -Parent $PSScriptRoot
 $data = Join-Path $root "data"
-$name = if ($Big) { "ml-25m" } else { "ml-latest-small" }
+$name = "ml-latest-small"
 $zip  = Join-Path $env:TEMP "$name.zip"
 $tmp  = Join-Path $env:TEMP "$name-extract"
 

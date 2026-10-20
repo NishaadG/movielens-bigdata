@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS summary (
 CREATE TABLE IF NOT EXISTS genre_stats (
   genre       text PRIMARY KEY,
   num_ratings bigint,
-  num_movies  int,
   avg_rating  double
 );
 
@@ -29,15 +28,3 @@ CREATE TABLE IF NOT EXISTS top_by_genre (
   PRIMARY KEY (genre, rank)
 ) WITH CLUSTERING ORDER BY (rank ASC);
 
--- how many ratings of each value (0.5 ... 5.0)
-CREATE TABLE IF NOT EXISTS rating_dist (
-  rating double PRIMARY KEY,
-  cnt    bigint
-);
-
--- ratings submitted per year
-CREATE TABLE IF NOT EXISTS ratings_by_year (
-  year       int PRIMARY KEY,
-  cnt        bigint,
-  avg_rating double
-);

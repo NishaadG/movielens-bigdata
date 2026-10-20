@@ -52,17 +52,11 @@ cqlsh -e "SELECT * FROM movielens.top_by_genre WHERE genre='Comedy';"
 ## What the Spark job computes (`app/job.py`)
 
 - Row count, number of users and movies, average rating, number of ratings of 4 stars or more.
-- Rating distribution and ratings per year.
 - Average rating per genre.
 - Top 10 movies overall and per genre (movies with fewer than 50 ratings are ignored).
 - Movies per genre with a map / reduceByKey on an RDD (the MapReduce idea).
 
 Results go back to HDFS (`/movielens/output`) as CSV and into Cassandra (`cassandra/schema.cql`).
-
-## Bigger data
-
-`scripts/download_data.ps1 -Big` downloads MovieLens 25M (about 650 MB for ratings.csv). Put it in HDFS and the
-file is split into several 128 MB blocks. Raise `MIN_RATINGS` (for example `MIN_RATINGS=1000 ./wsl/run_job.sh`).
 
 ## Project layout
 
@@ -72,6 +66,5 @@ file is split into several 128 MB blocks. Raise `MIN_RATINGS` (for example `MIN_
 | `app/job.py` | PySpark job |
 | `app/api.py`, `app/static/` | API and dashboard |
 | `cassandra/schema.cql` | Cassandra tables |
-| `docker/` | optional: the same stack in Docker Compose (`docker compose -f docker/docker-compose.yml ...`) |
 
 Dataset: MovieLens, GroupLens Research, University of Minnesota.

@@ -82,7 +82,7 @@ async function loadGenres() {
 
   data.forEach((d) => {
     const row = el("div", "dot-row");
-    row.title = nf.format(d.num_ratings) + " ratings across " + nf.format(d.num_movies) + " movies";
+    row.title = nf.format(d.num_ratings) + " ratings";
     const track = el("div", "track");
     ticks.forEach((t) => {
       const k = el("div", "tick");
@@ -128,57 +128,6 @@ async function setupTop() {
   loadTop("All");
 }
 
-/* ---------- rating distribution ---------- */
-async function loadDist() {
-  const data = await get("/api/distribution");
-  const max = Math.max(...data.map((d) => d.cnt));
-  const box = $("dist");
-  box.replaceChildren();
-  const labels = el("div", "col-labels");
-  data.forEach((d) => {
-    const c = el("div", "col");
-    c.title = nf.format(d.cnt) + " ratings of " + d.rating;
-    const bar = el("div", "bar");
-    bar.style.height = (d.cnt / max) * 100 + "%";
-    c.append(el("div", "cnt", d.cnt >= 1000 ? Math.round(d.cnt / 1000) + "k" : d.cnt), bar);
-    box.append(c);
-    labels.append(el("span", "", d.rating));
-  });
-  box.after(labels);
-}
-
-/* ---------- ratings per year (inline SVG) ---------- */
-async function loadYears() {
-  const data = await get("/api/years");
-  const W = 460, H = 200, L = 44, R = 10, T = 10, B = 24;
-  const xs = data.map((d) => d.year);
-  const ymax = Math.max(...data.map((d) => d.cnt));
-  const niceMax = Math.ceil(ymax / 1000) * 1000 || ymax;
-  const x = (v) => L + ((v - xs[0]) / (xs[xs.length - 1] - xs[0] || 1)) * (W - L - R);
-  const y = (v) => T + (1 - v / niceMax) * (H - T - B);
-  const ns = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-  svg.setAttribute("class", "line");
-  const add = (tag, attrs, text) => {
-    const n = document.createElementNS(ns, tag);
-    Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v));
-    if (text !== undefined) n.textContent = text;
-    svg.append(n);
-  };
-  [0, 0.5, 1].forEach((f) => {
-    const v = niceMax * f;
-    add("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: f === 0 ? "axis" : "grid" });
-    add("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, v >= 1000 ? v / 1000 + "k" : v);
-  });
-  const step = Math.ceil(xs.length / 6);
-  xs.forEach((yr, i) => {
-    if (i % step === 0 || i === xs.length - 1) add("text", { x: x(yr), y: H - 6, "text-anchor": "middle" }, yr);
-  });
-  add("polyline", { class: "path", points: data.map((d) => `${x(d.year)},${y(d.cnt)}`).join(" ") });
-  $("years").replaceChildren(svg);
-}
-
 /* ---------- HDFS files ---------- */
 async function loadHdfs() {
   const tb = document.querySelector("#hdfs tbody");
@@ -209,7 +158,7 @@ async function loadHdfs() {
     return;
   }
   try {
-    await Promise.all([loadSummary(), loadGenres(), setupTop(), loadDist(), loadYears()]);
+    await Promise.all([loadSummary(), loadGenres(), setupTop()]);
   } catch (e) {
     $("lede").textContent = "Could not load results: " + e.message;
   }
