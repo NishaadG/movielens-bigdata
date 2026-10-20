@@ -16,7 +16,7 @@ export HDFS_URL=hdfs://localhost:9000
 export HDFS_WEB=http://localhost:9870
 export CASSANDRA_HOST=127.0.0.1
 export REPLICATION=1
-export MIN_RATINGS="${MIN_RATINGS:-50}"
+export MIN_RATINGS="${MIN_RATINGS:-1000}"
 export PYSPARK_PYTHON="$BD/venv/bin/python"
 
 # keep Cassandra small enough for a laptop

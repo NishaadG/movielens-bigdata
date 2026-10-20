@@ -10,11 +10,12 @@ from operator import add
 
 from cassandra.cluster import Cluster
 from pyspark.sql import SparkSession, Window
+from pyspark.sql.types import DoubleType, IntegerType, LongType, StringType, StructField, StructType
 from pyspark.sql import functions as F
 
 HDFS = os.environ.get("HDFS_URL", "hdfs://localhost:9000")
 CASSANDRA_HOST = os.environ.get("CASSANDRA_HOST", "127.0.0.1")
-MIN_RATINGS = int(os.environ.get("MIN_RATINGS", "50"))  # ignore movies with too few votes
+MIN_RATINGS = int(os.environ.get("MIN_RATINGS", "1000"))  # ignore movies with too few votes
 TOP_N = 10
 
 IN_DIR = f"{HDFS}/movielens"
@@ -23,17 +24,28 @@ OUT_DIR = f"{HDFS}/movielens/output"
 spark = (
     SparkSession.builder.appName("movielens-analytics")
     .master("local[*]")
-    .config("spark.driver.memory", "1g")
-    .config("spark.hadoop.dfs.replication", os.environ.get("REPLICATION", "1"))
-    .config("spark.sql.shuffle.partitions", "8")
+        .config("spark.hadoop.dfs.replication", os.environ.get("REPLICATION", "1"))
+    .config("spark.sql.shuffle.partitions", "16")
     .config("spark.ui.showConsoleProgress", "false")
     .getOrCreate()
 )
 spark.sparkContext.setLogLevel("ERROR")
 
 # ---------------------------------------------------------------- 1. load from HDFS
-ratings = spark.read.csv(f"{IN_DIR}/ratings.csv", header=True, inferSchema=True)
-movies = spark.read.csv(f"{IN_DIR}/movies.csv", header=True, inferSchema=True)
+# explicit schemas: Spark does not have to scan the big file once just to guess the column types
+ratings_schema = StructType([
+    StructField("userId", IntegerType()),
+    StructField("movieId", IntegerType()),
+    StructField("rating", DoubleType()),
+    StructField("timestamp", LongType()),
+])
+movies_schema = StructType([
+    StructField("movieId", IntegerType()),
+    StructField("title", StringType()),
+    StructField("genres", StringType()),
+])
+ratings = spark.read.csv(f"{IN_DIR}/ratings.csv", header=True, schema=ratings_schema)
+movies = spark.read.csv(f"{IN_DIR}/movies.csv", header=True, schema=movies_schema)
 ratings.cache()
 
 # ---------------------------------------------------------------- 2. basic numbers
@@ -49,6 +61,7 @@ summary = {
     "total_movies": float(total_movies),
     "avg_rating": float(avg_rating),
     "high_ratings": float(high_ratings),
+    "min_ratings": float(MIN_RATINGS),
 }
 print("SUMMARY", summary)
 

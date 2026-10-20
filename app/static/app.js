@@ -42,6 +42,7 @@ async function loadSummary() {
   const s = await get("/api/summary");
   $("lede").textContent =
     nf.format(s.total_ratings) + " ratings of " + nf.format(s.total_movies) + " movies, processed with Hadoop, Spark and Cassandra.";
+  $("min-ratings").textContent = nf.format(s.min_ratings);
   const figs = [
     [nf.format(s.total_ratings), "ratings"],
     [nf.format(s.total_users), "users"],
