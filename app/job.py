@@ -65,6 +65,9 @@ summary = {
 }
 print("SUMMARY", summary)
 
+# how many ratings each star value got (0.5, 1.0, ... 5.0)
+rating_dist = ratings.groupBy("rating").count().orderBy("rating")
+
 # ---------------------------------------------------------------- 3. per-movie stats
 movie_stats = (
     ratings.groupBy("movieId")
@@ -120,6 +123,7 @@ print("GENRE COUNTS (movies per genre)", genre_counts.take(5))
 for name, df in [
     ("genre_stats", genre_stats),
     ("top_movies", top_movies),
+    ("rating_dist", rating_dist),
 ]:
     df.coalesce(1).write.mode("overwrite").option("header", True).csv(f"{OUT_DIR}/{name}")
 spark.createDataFrame(genre_counts.collect(), ["genre", "movies"]).coalesce(1).write.mode(
@@ -140,7 +144,7 @@ def connect():
 
 session = connect()
 
-for t in ["summary", "genre_stats", "top_by_genre"]:
+for t in ["summary", "genre_stats", "top_by_genre", "rating_dist", "genre_counts"]:
     session.execute(f"TRUNCATE {t}")
 
 ins = session.prepare("INSERT INTO summary (metric, value) VALUES (?, ?)")
@@ -160,6 +164,15 @@ for r in top_movies.collect():
     session.execute(
         ins, (r["genre"], r["rank"], r["title"], float(r["avg_rating"]), r["num_ratings"])
     )
+
+ins = session.prepare("INSERT INTO rating_dist (rating, num_ratings) VALUES (?, ?)")
+for r in rating_dist.collect():
+    session.execute(ins, (float(r["rating"]), r["count"]))
+
+ins = session.prepare("INSERT INTO genre_counts (genre, movies) VALUES (?, ?)")
+for g, n in genre_counts.collect():
+    if g != "(no genres listed)":
+        session.execute(ins, (g, n))
 
 print("DONE: results written to HDFS /movielens/output and Cassandra keyspace movielens")
 spark.stop()

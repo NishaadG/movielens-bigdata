@@ -48,7 +48,9 @@ cqlsh -e "SELECT * FROM movielens.top_by_genre WHERE genre='Comedy';"
 ## What the Spark job computes (`app/job.py`)
 
 - Row count, number of users and movies, average rating, number of ratings of 4 stars or more.
+- Number of ratings for each star value (0.5 to 5.0).
 - Average rating per genre.
+- Number of ratings per genre.
 - Top 10 movies overall and per genre (movies with fewer than 1000 ratings are ignored, set with `MIN_RATINGS`).
 - Movies per genre with a map / reduceByKey on an RDD (the MapReduce idea).
 

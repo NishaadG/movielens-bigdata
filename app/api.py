@@ -38,6 +38,18 @@ def genres():
     return sorted(out, key=lambda r: -r["avg_rating"])
 
 
+@app.get("/api/rating-dist")
+def rating_dist():
+    rows = db().execute("SELECT rating, num_ratings FROM rating_dist")
+    return sorted((r._asdict() for r in rows), key=lambda r: r["rating"])
+
+
+@app.get("/api/genre-counts")
+def genre_counts():
+    rows = db().execute("SELECT genre, movies FROM genre_counts")
+    return sorted((r._asdict() for r in rows), key=lambda r: -r["movies"])
+
+
 @app.get("/api/top")
 def top(genre: str = "All"):
     rows = db().execute(

@@ -28,3 +28,15 @@ CREATE TABLE IF NOT EXISTS top_by_genre (
   PRIMARY KEY (genre, rank)
 ) WITH CLUSTERING ORDER BY (rank ASC);
 
+
+-- how many ratings each star value (0.5 ... 5.0) received
+CREATE TABLE IF NOT EXISTS rating_dist (
+  rating      double PRIMARY KEY,
+  num_ratings bigint
+);
+
+-- number of movies per genre (result of the RDD map / reduceByKey step)
+CREATE TABLE IF NOT EXISTS genre_counts (
+  genre  text PRIMARY KEY,
+  movies int
+);

@@ -27,6 +27,21 @@
     </section>
 
     <section>
+      <h2>How people rate</h2>
+      <p class="note">Number of ratings for each star value. Half stars are allowed, so there are ten bars.</p>
+      <div id="rating-dist" class="cols"></div>
+    </section>
+
+    <section>
+      <h2>Size of each genre</h2>
+      <p class="note">Left: how many ratings each genre received. Right: how many movies belong to each genre (counted with the RDD map / reduceByKey step). A movie in two genres counts in both.</p>
+      <div class="two">
+        <div><h3>Ratings per genre</h3><div id="genre-ratings" class="hbars"></div></div>
+        <div><h3>Movies per genre</h3><div id="genre-movies" class="hbars"></div></div>
+      </div>
+    </section>
+
+    <section>
       <div class="row-head">
         <h2>Highest rated movies</h2>
         <label class="pick">Genre

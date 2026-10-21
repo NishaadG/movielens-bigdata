@@ -101,6 +101,49 @@ async function loadGenres() {
   });
 }
 
+/* ---------- basic bar charts ---------- */
+function short(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+  if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + "K";
+  return String(n);
+}
+
+async function loadRatingDist() {
+  const data = await get("/api/rating-dist");
+  const max = Math.max(...data.map((d) => d.num_ratings));
+  $("rating-dist").replaceChildren(
+    ...data.map((d) => {
+      const col = el("div", "col");
+      col.title = nf.format(d.num_ratings) + " ratings of " + d.rating + " stars";
+      const bar = el("div", "bar");
+      bar.style.height = (d.num_ratings / max) * 100 + "%";
+      col.append(el("div", "v", short(d.num_ratings)), bar, el("div", "k", d.rating.toFixed(1)));
+      return col;
+    })
+  );
+}
+
+function hbars(id, items, fmt) {
+  const max = Math.max(...items.map((i) => i.value));
+  $(id).replaceChildren(
+    ...items.map((i) => {
+      const row = el("div", "hrow");
+      const track = el("div", "track");
+      const bar = el("div", "bar");
+      bar.style.width = (i.value / max) * 100 + "%";
+      track.append(bar);
+      row.append(el("div", "name", i.label), track, el("div", "val", fmt(i.value)));
+      return row;
+    })
+  );
+}
+
+async function loadGenreSizes() {
+  const [stats, counts] = await Promise.all([get("/api/genres"), get("/api/genre-counts")]);
+  hbars("genre-ratings", stats.map((g) => ({ label: g.genre, value: g.num_ratings })).sort((a, b) => b.value - a.value), short);
+  hbars("genre-movies", counts.map((g) => ({ label: g.genre, value: g.movies })), nf.format);
+}
+
 /* ---------- top movies, per genre ---------- */
 async function loadTop(genre) {
   const rows = await get("/api/top?genre=" + encodeURIComponent(genre));
@@ -159,7 +202,7 @@ async function loadHdfs() {
     return;
   }
   try {
-    await Promise.all([loadSummary(), loadGenres(), setupTop()]);
+    await Promise.all([loadSummary(), loadGenres(), loadRatingDist(), loadGenreSizes(), setupTop()]);
   } catch (e) {
     $("lede").textContent = "Could not load results: " + e.message;
   }
